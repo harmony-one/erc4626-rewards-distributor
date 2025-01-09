@@ -21,6 +21,7 @@ export interface IEvent {
   removed: boolean;
   name: string;
   returnValues: any;
+  event: string;
 }
 
 export interface IEventTrackerService {
@@ -76,15 +77,20 @@ export class EventTrackerService {
     this.eventName = params.eventName || '';
   }
 
-  async start() {
+  async start(startBlock?: number) {
     try {
       // this.lastBlock = await getContractDeploymentBlock(this.contractAddress);
       // this.startBlock = this.lastBlock;
-
+      
       this.lastNodeBlock = await this.web3.eth.getBlockNumber();
 
-      this.lastBlock = this.lastNodeBlock - 30000;
-      this.startBlock = this.lastBlock;
+      if(!startBlock) {
+        this.lastBlock = this.lastNodeBlock - 30000;
+        this.startBlock = this.lastBlock;
+      } else {
+        this.lastBlock = startBlock;
+        this.startBlock = startBlock;
+      }
 
       // const defStartBlock = Number(this.lastNodeBlock) - 250000;
 

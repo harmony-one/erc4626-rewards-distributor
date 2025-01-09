@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Web3Service } from 'nest-web3';
 
 import rewardDistJson from '../abi/RewardDist';
-// import stakingVaultJson from '../abi/StakingVault';
+import { EventTrackerService, IEvent } from '../event-tracker/event-tracker.service';
+import stakingVaultJson from '../abi/StakingVault';
 // import tokenJson from '../abi/Token';
 
 const SYNC_INTERVAL = 10000;
@@ -25,6 +26,9 @@ export class RewardDistService {
 
     private infoData: any = {};
 
+    eventTrackerService: EventTrackerService;
+    eventLogs: any[] = [];
+
     constructor(
         private configService: ConfigService,
         private readonly web3Service: Web3Service
@@ -37,6 +41,31 @@ export class RewardDistService {
         this.client.eth.defaultAccount = account.address;
 
         this.accountAddress = account.address;
+
+        this.eventTrackerService = new EventTrackerService({
+            contractAddress: this.configService.get('contracts.stakingVault'),
+            contractAbi: stakingVaultJson.abi,
+            web3: this.client,
+            chain: 'hmy',
+            getEventCallback: async (event: IEvent) => {
+                if(event.name === "RewardsDeposited") {
+                    //this.logger.log(event);
+
+                    const timestamp = (await this.client.eth.getBlock(event.blockNumber)).timestamp;
+
+                    this.eventLogs.push({
+                        blockNumber: event.blockNumber,
+                        transactionHash: event.transactionHash,
+                        timestamp,
+                        amount: event.returnValues?.amount,
+                    })
+                }
+
+                return Promise.resolve();
+            }
+        })
+
+        this.eventTrackerService.start(66974833);
 
         this.checkAndSendRewards();
     }
@@ -113,9 +142,11 @@ export class RewardDistService {
                 stakingVault: this.configService.get('contracts.stakingVault'),
                 token: this.configService.get('contracts.token'),
             },
-            SYNC_INTERVAL
+            SYNC_INTERVAL,
         }
     }
 
-    list = () => { return [] }
+    list = () => { return this.eventLogs };
+
+    eventsTrackerInfo = () => this.eventTrackerService.getInfo();
 }

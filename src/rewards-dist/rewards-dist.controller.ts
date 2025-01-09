@@ -11,12 +11,17 @@ export class RewardDistController {
     private readonly rewardDistService: RewardDistService
   ) { }
   @Get('/list')
-  getTokens() {
+  getEvents() {
     return this.rewardDistService.list();
   }
 
   @Get('/info')
   getInfo() {
     return this.rewardDistService.info();
+  }
+
+  @Get('/events-tracker-info')
+  getEventsTrackerInfo() {
+    return this.rewardDistService.eventsTrackerInfo();
   }
 }
